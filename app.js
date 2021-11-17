@@ -7,6 +7,7 @@ const Schema = mongoose.Schema;
 const userScheme = new Schema({
   login: {
     type: String,
+    unique: true,
     required: true
   },
   password: {
@@ -25,8 +26,12 @@ app.use(cors());
 
 app.post('/createUser', (req, res) => {
   const user = new User(req.body);
-  user.save().then(result => {
-    res.send({ data: result });
+  User.findOne({ login: req.body.login }).then(result => {
+    if (result) {
+      res.status(404).send('this user already exists');
+    } else user.save().then(result => {
+      res.send({ data: result });
+    });
   });
 });
 
