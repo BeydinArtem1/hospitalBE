@@ -25,14 +25,18 @@ app.use(express.json());
 app.use(cors());
 
 app.post('/createUser', (req, res) => {
-  const user = new User(req.body);
-  User.findOne({ login: req.body.login }).then(result => {
-    if (result) {
-      res.status(404).send('this user already exists');
-    } else user.save().then(result => {
-      res.send({ data: result });
+  if (req.body.hasOwnProperty('login') && req.body.hasOwnProperty('password')) {
+    const user = new User(req.body);
+    User.findOne({ login: req.body.login }).then(result => {
+      if (result) {
+        res.status(404).send('this user already exists');
+      } else user.save().then(result => {
+        res.send({ data: result });
+      });
     });
-  });
+  } else {
+    res.status(422).send('invalid property name');
+  } 
 });
 
 app.listen(8000, () => {
