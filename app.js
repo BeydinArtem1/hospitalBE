@@ -38,12 +38,10 @@ app.post('/authorize', (req, res) => {
     User.findOne({ login: req.body.login }).then(result => {
       if (result) {
         const validPass = bcrypt.compareSync(req.body.password, result.password);
-        if (!validPass) {
-          res.status(404).send('invalid pass');
-        } else {
+        if (validPass) {
           const token = addToken(result._id);
           res.send(token);
-        }
+        } else res.status(404).send('invalid pass');        
       } else res.status(404).send('user not found');
     });
   } else res.status(422).send('invalid property name');
@@ -60,9 +58,7 @@ app.post('/createUser', (req, res) => {
         res.send({ data: result });
       });
     });
-  } else {
-    res.status(422).send('invalid property name');
-  }
+  } else res.status(422).send('invalid property name');  
 });
 
 app.listen(8000, () => {
