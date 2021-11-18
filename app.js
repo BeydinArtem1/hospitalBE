@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
+jwt = require('jsonwebtoken');
 const Schema = mongoose.Schema;
 
 const userScheme = new Schema({
@@ -24,6 +25,16 @@ const User = mongoose.model('users', userScheme);
 app.use(express.json());
 app.use(cors());
 
+app.post('/authorize', (req, res) => {
+  if (req.body.hasOwnProperty('login') && req.body.hasOwnProperty('password')) {
+    User.findOne({ login: req.body.login, password: req.body.password }).then(result => {
+      if (result) {
+        res.send({ data: result });
+      } else res.status(404).send('user not found');
+    });
+  } else res.status(422).send('invalid property name');
+});
+
 app.post('/createUser', (req, res) => {
   if (req.body.hasOwnProperty('login') && req.body.hasOwnProperty('password')) {
     const user = new User(req.body);
@@ -36,7 +47,7 @@ app.post('/createUser', (req, res) => {
     });
   } else {
     res.status(422).send('invalid property name');
-  } 
+  }
 });
 
 app.listen(8000, () => {
