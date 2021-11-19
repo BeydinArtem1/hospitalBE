@@ -17,10 +17,29 @@ const userScheme = new Schema({
     required: true
   }
 });
+const taskScheme = new Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  doc: {
+    type: String,
+    required: true
+  },
+  date: {
+    type: String,
+    required: true
+  },
+  cause: {
+    type: String,
+    required: true
+  }
+});
 
 const url = 'mongodb+srv://ArtemBeydin:Restart987@cluster0.cm9vp.mongodb.net/Hospital?retryWrites=true&w=majority';
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
 
+const Task = mongoose.model('Tasks', taskScheme);
 const User = mongoose.model('users', userScheme);
 
 app.use(express.json());
@@ -32,6 +51,27 @@ const addToken = (id) => {
   }
   return jwt.sign(payload, secret, { expiresIn: "24h" })
 }
+
+app.get('/allTasks', (req, res) => {
+  Task.find().then(result => {
+    res.send({ data: result });
+  });
+})
+
+app.post('/saveTask', (req, res) => {
+  if (
+    req.body.hasOwnProperty('name') &&
+    req.body.hasOwnProperty('doc') &&
+    req.body.hasOwnProperty('date') &&
+    req.body.hasOwnProperty('cause')) {
+    const task = new Task(req.body);
+    task.save().then(result => {
+      res.send({ data: result });
+    });
+  } else {
+    res.status(422).send('invalid property name');
+  }
+})
 
 app.post('/authorize', (req, res) => {
   if (req.body.hasOwnProperty('login') && req.body.hasOwnProperty('password')) {
