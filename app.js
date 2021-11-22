@@ -49,14 +49,26 @@ const addToken = (id) => {
   const payload = {
     id
   }
-  return jwt.sign(payload, secret, { expiresIn: "24h" })
+  return jwt.sign(payload, secret, { expiresIn: '24h' })
 }
 
 app.get('/allTasks', (req, res) => {
   Task.find().then(result => {
     res.send({ data: result });
   });
-})
+});
+
+app.patch('/updateTask', (req, res) => {
+  if (req.body._id) {
+    if (req.body.hasOwnProperty('name') && req.body.hasOwnProperty('doc') && req.body.hasOwnProperty('date') && req.body.hasOwnProperty('cause')) {
+      Task.updateOne({ _id: req.body._id }, req.body).then((result) => {
+        Task.find().then((result) => {
+          res.send({ data: result });
+        });
+      });
+    } else res.status(422).send('invalid property name');    
+  } else res.status(404).send('id not found');  
+});
 
 app.post('/saveTask', (req, res) => {
   if (
