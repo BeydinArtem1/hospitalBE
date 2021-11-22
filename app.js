@@ -71,7 +71,19 @@ app.post('/saveTask', (req, res) => {
   } else {
     res.status(422).send('invalid property name');
   }
-})
+});
+
+app.delete('/deleteTask', (req, res) => {
+  if (req.query._id) {
+    Task.deleteOne({ _id: req.query._id }).then((result) => {
+      Task.find().then((result) => {
+        res.send({ data: result });
+      });
+    });
+  } else {
+    res.status(404).send('id not found');
+  }
+});
 
 app.post('/authorize', (req, res) => {
   if (req.body.hasOwnProperty('login') && req.body.hasOwnProperty('password')) {
