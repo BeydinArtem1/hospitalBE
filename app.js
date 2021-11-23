@@ -17,7 +17,7 @@ const userScheme = new Schema({
     required: true
   }
 });
-const taskScheme = new Schema({
+const AppointmentScheme = new Schema({
   name: {
     type: String,
     required: true
@@ -33,13 +33,17 @@ const taskScheme = new Schema({
   cause: {
     type: String,
     required: true
+  },
+  userId: {
+    type: String,
+    required: true
   }
 });
 
 const url = 'mongodb+srv://ArtemBeydin:Restart987@cluster0.cm9vp.mongodb.net/Hospital?retryWrites=true&w=majority';
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const Task = mongoose.model('Tasks', taskScheme);
+const Appointment = mongoose.model('Appointments', AppointmentScheme);
 const User = mongoose.model('users', userScheme);
 
 app.use(express.json());
@@ -49,23 +53,42 @@ const addToken = (id) => {
   const payload = {
     id
   }
-  return jwt.sign(payload, secret, { expiresIn: "24h" })
+  return jwt.sign(payload, secret, { expiresIn: '24h' })
 }
 
-app.get('/allTasks', (req, res) => {
-  Task.find().then(result => {
-    res.send({ data: result });
-  });
-})
+app.get('/allAppointments', (req, res) => {
+  const { token } = req.headers;
+  if (!token) res.status(402).send('user not authorized');
+  const info = jwt.verify(token, secret);
+  Appointment.find({ userId: info.id }).then(result => res.send({ data: result }));
+});
 
-app.post('/saveTask', (req, res) => {
+app.patch('/updateAppointment', (req, res) => {
+  if ((req.body._id) && (
+    req.body.hasOwnProperty('name') ||
+    req.body.hasOwnProperty('doc') ||
+    req.body.hasOwnProperty('date') ||
+    req.body.hasOwnProperty('cause'))) {
+      Appointment.updateOne({ _id: req.body._id }, req.body).then((result) => {
+        Appointment.find().then((result) => res.send({ data: result }));
+    });
+  } else res.status(422).send('invalid property name');
+});
+
+app.post('/saveAppointment', (req, res) => {
+  const { token } = req.headers;
+  if (!token) {
+    res.status(402).send('user not authorized');
+  }
+  const info = jwt.verify(token, secret);
   if (
     req.body.hasOwnProperty('name') &&
     req.body.hasOwnProperty('doc') &&
     req.body.hasOwnProperty('date') &&
     req.body.hasOwnProperty('cause')) {
-    const task = new Task(req.body);
-    task.save().then(result => {
+    req.body.userId = info.id;
+    const appointment = new Appointment(req.body);
+    appointment.save().then(result => {
       res.send({ data: result });
     });
   } else {
@@ -73,10 +96,10 @@ app.post('/saveTask', (req, res) => {
   }
 });
 
-app.delete('/deleteTask', (req, res) => {
+app.delete('/deleteAppointment', (req, res) => {
   if (req.query._id) {
-    Task.deleteOne({ _id: req.query._id }).then((result) => {
-      Task.find().then((result) => {
+    Appointment.deleteOne({ _id: req.query._id }).then((result) => {
+      Appointment.find().then((result) => {
         res.send({ data: result });
       });
     });
@@ -108,7 +131,8 @@ app.post('/createUser', (req, res) => {
       } else {
         const user = new User({ login: req.body.login, password: hashPass });
         user.save().then(result => {
-          res.send({ data: result });
+          const token = addToken(result._id);
+          res.send({ data: result, token });
         });
       }
     });
