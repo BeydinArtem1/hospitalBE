@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
+const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Schema = mongoose.Schema;
@@ -33,6 +34,10 @@ const taskScheme = new Schema({
   cause: {
     type: String,
     required: true
+  },
+  userId: {
+    type: String,
+    required: true
   }
 });
 
@@ -44,6 +49,7 @@ const User = mongoose.model('users', userScheme);
 
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser())
 
 const addToken = (id) => {
   const payload = {
@@ -53,29 +59,40 @@ const addToken = (id) => {
 }
 
 app.get('/allTasks', (req, res) => {
-  Task.find().then(result => {
+  const { token } = req.headers;
+  if (!token) res.status(402).send('user not authorized');
+  const info = jwt.verify(token, secret);
+  Task.find({ userId: info.id }).then(result => {
     res.send({ data: result });
   });
 });
 
 app.patch('/updateTask', (req, res) => {
-  if (req.body._id) {
-    if (req.body.hasOwnProperty('name') && req.body.hasOwnProperty('doc') && req.body.hasOwnProperty('date') && req.body.hasOwnProperty('cause')) {
-      Task.updateOne({ _id: req.body._id }, req.body).then((result) => {
-        Task.find().then((result) => {
-          res.send({ data: result });
-        });
+  if ((req.body._id) && (
+    req.body.hasOwnProperty('name') ||
+    req.body.hasOwnProperty('doc') ||
+    req.body.hasOwnProperty('date') ||
+    req.body.hasOwnProperty('cause'))) {
+    Task.updateOne({ _id: req.body._id }, req.body).then((result) => {
+      Task.find().then((result) => {
+        res.send({ data: result });
       });
-    } else res.status(422).send('invalid property name');    
-  } else res.status(404).send('id not found');  
+    });
+  } else res.status(422).send('invalid property name');
 });
 
 app.post('/saveTask', (req, res) => {
+  const { token } = req.headers;
+  if (!token) {
+    res.status(402).send('user not authorized');
+  }
+  const info = jwt.verify(token, secret);
   if (
     req.body.hasOwnProperty('name') &&
     req.body.hasOwnProperty('doc') &&
     req.body.hasOwnProperty('date') &&
     req.body.hasOwnProperty('cause')) {
+    req.body.userId = info.id;
     const task = new Task(req.body);
     task.save().then(result => {
       res.send({ data: result });
@@ -120,7 +137,8 @@ app.post('/createUser', (req, res) => {
       } else {
         const user = new User({ login: req.body.login, password: hashPass });
         user.save().then(result => {
-          res.send({ data: result });
+          const token = addToken(result._id);
+          res.send({ data: result, token });
         });
       }
     });
