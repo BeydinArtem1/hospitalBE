@@ -17,7 +17,7 @@ const userScheme = new Schema({
     required: true
   }
 });
-const AppointmentScheme = new Schema({
+const appointmentScheme = new Schema({
   name: {
     type: String,
     required: true
@@ -43,7 +43,7 @@ const AppointmentScheme = new Schema({
 const url = 'mongodb+srv://ArtemBeydin:Restart987@cluster0.cm9vp.mongodb.net/Hospital?retryWrites=true&w=majority';
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const Appointment = mongoose.model('Appointments', AppointmentScheme);
+const Appointment = mongoose.model('appointments', appointmentScheme);
 const User = mongoose.model('users', userScheme);
 
 app.use(express.json());
