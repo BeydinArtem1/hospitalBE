@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
-const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Schema = mongoose.Schema;
@@ -18,7 +17,7 @@ const userScheme = new Schema({
     required: true
   }
 });
-const taskScheme = new Schema({
+const AppointmentScheme = new Schema({
   name: {
     type: String,
     required: true
@@ -44,12 +43,11 @@ const taskScheme = new Schema({
 const url = 'mongodb+srv://ArtemBeydin:Restart987@cluster0.cm9vp.mongodb.net/Hospital?retryWrites=true&w=majority';
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const Task = mongoose.model('Tasks', taskScheme);
+const Appointment = mongoose.model('Appointments', AppointmentScheme);
 const User = mongoose.model('users', userScheme);
 
 app.use(express.json());
 app.use(cors());
-app.use(cookieParser())
 
 const addToken = (id) => {
   const payload = {
@@ -58,30 +56,26 @@ const addToken = (id) => {
   return jwt.sign(payload, secret, { expiresIn: '24h' })
 }
 
-app.get('/allTasks', (req, res) => {
+app.get('/allAppointments', (req, res) => {
   const { token } = req.headers;
   if (!token) res.status(402).send('user not authorized');
   const info = jwt.verify(token, secret);
-  Task.find({ userId: info.id }).then(result => {
-    res.send({ data: result });
-  });
+  Appointment.find({ userId: info.id }).then(result => res.send({ data: result }));
 });
 
-app.patch('/updateTask', (req, res) => {
+app.patch('/updateAppointment', (req, res) => {
   if ((req.body._id) && (
     req.body.hasOwnProperty('name') ||
     req.body.hasOwnProperty('doc') ||
     req.body.hasOwnProperty('date') ||
     req.body.hasOwnProperty('cause'))) {
-    Task.updateOne({ _id: req.body._id }, req.body).then((result) => {
-      Task.find().then((result) => {
-        res.send({ data: result });
-      });
+      Appointment.updateOne({ _id: req.body._id }, req.body).then((result) => {
+        Appointment.find().then((result) => res.send({ data: result }));
     });
   } else res.status(422).send('invalid property name');
 });
 
-app.post('/saveTask', (req, res) => {
+app.post('/saveAppointment', (req, res) => {
   const { token } = req.headers;
   if (!token) {
     res.status(402).send('user not authorized');
@@ -93,8 +87,8 @@ app.post('/saveTask', (req, res) => {
     req.body.hasOwnProperty('date') &&
     req.body.hasOwnProperty('cause')) {
     req.body.userId = info.id;
-    const task = new Task(req.body);
-    task.save().then(result => {
+    const appointment = new Appointment(req.body);
+    appointment.save().then(result => {
       res.send({ data: result });
     });
   } else {
@@ -102,10 +96,10 @@ app.post('/saveTask', (req, res) => {
   }
 });
 
-app.delete('/deleteTask', (req, res) => {
+app.delete('/deleteAppointment', (req, res) => {
   if (req.query._id) {
-    Task.deleteOne({ _id: req.query._id }).then((result) => {
-      Task.find().then((result) => {
+    Appointment.deleteOne({ _id: req.query._id }).then((result) => {
+      Appointment.find().then((result) => {
         res.send({ data: result });
       });
     });
