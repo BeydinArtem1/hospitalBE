@@ -69,8 +69,11 @@ app.patch('/updateAppointment', (req, res) => {
     req.body.hasOwnProperty('doc') ||
     req.body.hasOwnProperty('date') ||
     req.body.hasOwnProperty('cause'))) {
-      Appointment.updateOne({ _id: req.body._id }, req.body).then((result) => {
-        Appointment.find().then((result) => res.send({ data: result }));
+    const { token } = req.headers;
+    if (!token) res.status(402).send('user not authorized');
+    const info = jwt.verify(token, secret);
+    Appointment.updateOne({ _id: req.body._id }, req.body).then((result) => {
+      Appointment.find({ userId: info.id }).then((result) => res.send({ data: result }));
     });
   } else res.status(422).send('invalid property name');
 });
