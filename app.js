@@ -102,7 +102,10 @@ app.post('/saveAppointment', (req, res) => {
 app.delete('/deleteAppointment', (req, res) => {
   if (req.query._id) {
     Appointment.deleteOne({ _id: req.query._id }).then((result) => {
-      Appointment.find().then((result) => {
+      const { token } = req.headers;
+      if (!token) res.status(402).send('user not authorized');
+      const info = jwt.verify(token, secret);
+      Appointment.find({ userId: info.id }).then((result) => {
         res.send({ data: result });
       });
     });
